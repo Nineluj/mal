@@ -1,2 +1,2 @@
 #!/bin/bash
-dotnet run --project "${STEP:-stepA_mal}" -- "${@}"
+dotnet run --project "${STEP:-stepA_mal}" -- --raw "${@}"
