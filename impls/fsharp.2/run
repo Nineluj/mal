@@ -1,2 +1,3 @@
 #!/bin/bash
-dotnet run --project "${STEP:-stepA_mal}" -- --raw "${@}"
+cd "$(dirname $0)"
+dotnet run --project "${STEP:-stepA_mal}_impl" -- --raw "${@}"

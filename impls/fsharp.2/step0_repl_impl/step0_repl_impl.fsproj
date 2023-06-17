@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+        <RootNamespace>step_0_repl_impl</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="REPL.fs" />
+      <Compile Include="InterpreterConsole.fs" />
+      <Compile Include="Program.fs" />
+    </ItemGroup>
+
+</Project>
