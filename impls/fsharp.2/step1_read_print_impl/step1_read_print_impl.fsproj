@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Types.fs" />
+        <Compile Include="Reader.fs" />
+        <Compile Include="Printer.fs" />
+        <Compile Include="REPL.fs" />
+        <Compile Include="InterpreterConsole.fs" />
+        <Compile Include="Program.fs" />
+    </ItemGroup>
+
+</Project>

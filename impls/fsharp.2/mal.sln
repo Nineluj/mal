@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "step0_repl_impl", "step0_repl_impl\step0_repl_impl.fsproj", "{3F17B71F-104B-4851-A701-BC0E21EE70FF}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "step1_read_print_impl", "step1_read_print_impl\step1_read_print_impl.fsproj", "{40CBDE22-6695-43ED-84B4-80C56FE7ECF7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{3F17B71F-104B-4851-A701-BC0E21EE70FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3F17B71F-104B-4851-A701-BC0E21EE70FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3F17B71F-104B-4851-A701-BC0E21EE70FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40CBDE22-6695-43ED-84B4-80C56FE7ECF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40CBDE22-6695-43ED-84B4-80C56FE7ECF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40CBDE22-6695-43ED-84B4-80C56FE7ECF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40CBDE22-6695-43ED-84B4-80C56FE7ECF7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
