@@ -8,8 +8,11 @@
 
     <ItemGroup>
       <Compile Include="REPL.fs" />
-      <Compile Include="InterpreterConsole.fs" />
       <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Library\Library.fsproj" />
     </ItemGroup>
 
 </Project>

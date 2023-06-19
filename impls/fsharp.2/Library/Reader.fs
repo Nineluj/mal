@@ -26,7 +26,7 @@ module Reader =
             | h :: t, false when h = '\\' -> innerFn true acc t
             | h :: t, true ->
                 (match h with
-                 // a backslash followed by a doublequote is translated into a plain doublequote character
+                 // a backslash followed by a double quote is translated into a plain double quote character
                  | '"' -> innerFn false ('"' :: acc) t
                  // a backslash followed by "n" is translated into a newline
                  | 'n' -> innerFn false ('\n' :: acc) t
@@ -57,6 +57,8 @@ module Reader =
                 s |> int |> Number |> ReadSuccess
             else if firstChar = '"' then
                 readString s
+            else if firstChar = ':' then
+                ReadSuccess(Keyword.create s)
             else
                 match s with
                 | "true" -> Bool true
@@ -65,11 +67,42 @@ module Reader =
                 | x -> Symbol x
                 |> ReadSuccess
 
+    let createMapFromList (lst: MALObject list list) : ReaderResult =
+        let pairsWithValidKeys, pairsWithInvalidKeys =
+            lst
+            |> List.map (fun x ->
+                let key = x[0]
+                let value = x[1]
+
+                match key with
+                | String s -> ReadSuccess(String s), value
+                | x -> ReadFailure $"Can't use type %s{x.GetType() |> string} for key", value)
+            |> List.partition (fun (keyReadResult, _) ->
+                match keyReadResult with
+                | ReadSuccess _ -> true
+                | ReadFailure _ -> false)
+
+        if pairsWithInvalidKeys.Length > 0 then
+            // return the first error if we have more than one error
+            fst (pairsWithInvalidKeys[0])
+        else
+            //
+            (pairsWithValidKeys
+             |> List.map (fun (keyResult, value) ->
+                 match keyResult with
+                 | ReadSuccess(String s) -> s, value
+                 | _ -> "", value)
+             |> Map.ofList)
+            |> MALObject.HashMap
+            |> ReadSuccess
+
     let rec read_form (r: Reader) : ParserResult =
         match r with
         | [] -> [], ReadFailure "Can't parse empty token"
         | "(" :: t -> read_list t
         | "[" :: t -> read_vec t
+        | "{" :: t -> read_hashmap t
+        | "'" :: t -> [], ReadFailure $"quoted values are not implemented yet. Tried to parse: {t}" // read_quoted t
         | other -> read_atom other
 
     and read_seq (closingToken: string) (resultingType: (MALObject list -> MALObject)) (r: Reader) : ParserResult =
@@ -84,6 +117,14 @@ module Reader =
 
         innerFn r []
 
+    and read_hashmap (r: Reader) : ParserResult =
+        let innerResult = read_seq "}" MALObject.List r
+
+        match innerResult with
+        | remaining, ReadFailure err -> remaining, ReadFailure err
+        | remaining, ReadSuccess(MALObject.List lst) -> remaining, lst |> List.chunkBySize 2 |> createMapFromList
+        | _ -> [], ReadFailure "couldn't parse hashmap items as list (required for hashmap parsing)"
+
     and read_list (r: Reader) : ParserResult = read_seq ")" MALObject.List r
     and read_vec (r: Reader) : ParserResult = read_seq "]" MALObject.Vector r
 
@@ -96,3 +137,14 @@ module Reader =
             | remaining, ReadSuccess _ ->
                 ReadFailure $"Not all tokens were processed. Remaining: %A{List.toArray remaining}"
             | _, ReadFailure err -> ReadFailure err
+
+
+// and read_quoted (r: Reader): ParserResult =
+//     match r with
+//     | [] -> [], ReadFailure @"Got EOF, expected quoted value"
+//     | inner -> (match read_form inner with
+//                 | remaining, ReadSuccess (MALObject.List lst) -> remaining, ReadSuccess (
+//                         MALObject.List ((MALObject.Symbol "quote")::lst)
+//                     )
+//                 | remaining, ReadSuccess  -> remaining ReadFailure "only lists for now"
+//                         )
