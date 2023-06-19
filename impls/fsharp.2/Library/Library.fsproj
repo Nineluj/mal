@@ -10,6 +10,7 @@
         <Compile Include="Types.fs" />
         <Compile Include="Reader.fs" />
         <Compile Include="Printer.fs" />
+        <Compile Include="Builtin.fs" />
     </ItemGroup>
 
 </Project>

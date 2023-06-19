@@ -1,5 +1,6 @@
-module Reader
+namespace Reader
 
+open System
 open Types
 
 module Reader =
@@ -53,7 +54,9 @@ module Reader =
 
             if isRestrictedChar firstChar then
                 ReadFailure $"Cannot use restricted char \"{firstChar}\" for atom: {s}"
-            else if firstChar >= '0' && firstChar <= '9' then
+            else if firstChar = '-' && s.Length > 1 && Char.IsDigit s[1] then
+                s[1..] |> int |> (fun x -> -x) |> Number |> ReadSuccess
+            else if Char.IsDigit firstChar then
                 s |> int |> Number |> ReadSuccess
             else if firstChar = '"' then
                 readString s

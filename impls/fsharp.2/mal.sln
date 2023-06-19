@@ -9,6 +9,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "step1_read_print_impl", "st
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Library", "Library\Library.fsproj", "{87919FBF-E663-490F-8625-7FD0250F3890}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "step2_eval_impl", "step2_eval_impl\step2_eval_impl.fsproj", "{3D0EB44B-210F-45AD-8426-8083DF6361D4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{87919FBF-E663-490F-8625-7FD0250F3890}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87919FBF-E663-490F-8625-7FD0250F3890}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87919FBF-E663-490F-8625-7FD0250F3890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D0EB44B-210F-45AD-8426-8083DF6361D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D0EB44B-210F-45AD-8426-8083DF6361D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D0EB44B-210F-45AD-8426-8083DF6361D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D0EB44B-210F-45AD-8426-8083DF6361D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

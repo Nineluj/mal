@@ -1,35 +1,61 @@
 namespace Library
 
+open Microsoft.FSharp.Core
+
+[<RequireQualifiedAccess>]
 module InterpreterConsole =
     open System
 
-    type UserInput = { text: string }
+    type T =
+        { isInteractive: bool
+          rep: string -> string }
 
-    let defaultInput = { text = "" }
+    type UserInput =
+        { text: string }
+
+        static member defaultValue = { text = "" }
 
     type CommandHistory =
         { historyPast: string list
           historyFuture: string list }
 
-    let defaultCommandHistory = { historyPast = []; historyFuture = [] }
+        static member defaultValue = { historyPast = []; historyFuture = [] }
 
-    /// Add a new item to the history
-    let pushHistory (history: CommandHistory) (newCommand: string) =
-        let rec innerFn (ch: CommandHistory) =
-            match ch.historyFuture with
-            | [] -> ch
-            | h :: t ->
-                innerFn
-                    { historyFuture = t
-                      historyPast = h :: ch.historyPast }
+        /// Add a new item to the start of the historyPast after moving all the
+        /// future items to the past.
+        static member push (history: CommandHistory) (newCommand: string) =
 
-        let restoredHistory = innerFn history
+            let rec innerFn (ch: CommandHistory) =
+                match ch.historyFuture with
+                | [] -> ch
+                | h :: t ->
+                    innerFn
+                        { historyFuture = t
+                          historyPast = h :: ch.historyPast }
 
-        { restoredHistory with
-            historyPast = newCommand :: restoredHistory.historyPast }
+            let restoredHistory = innerFn history
+
+            { restoredHistory with
+                historyPast = newCommand :: restoredHistory.historyPast }
+
+        static member forward(history: CommandHistory) : string option * CommandHistory =
+            match (history.historyPast, history.historyFuture) with
+            | _, [] -> None, history
+            | past, h :: t ->
+                Some h,
+                { historyFuture = t
+                  historyPast = h :: past }
+
+        static member backwards(history: CommandHistory) : string option * CommandHistory =
+            match (history.historyPast, history.historyFuture) with
+            | [], _ -> None, history
+            | h :: t, future ->
+                Some h,
+                { historyFuture = h :: future
+                  historyPast = t }
 
     /// State tracks the state for the input on the line that the user is entering
-    type ConsoleState =
+    type State =
         { input: UserInput
           history: CommandHistory }
 
@@ -60,49 +86,52 @@ module InterpreterConsole =
 
     let readBasic () = SubmitCommandBasic(Console.ReadLine())
 
-    let updateState (state: ConsoleState) (action: UserActionType) : ConsoleState * CommandResult =
+    let updateState (state: State) (action: UserActionType) : State * CommandResult =
         match action with
         | CharacterInput c ->
             { state with
                 input = { text = state.input.text + string c } },
             None
         | SubmitCommand ->
-            { input = defaultInput
-              history = pushHistory state.history state.input.text },
+            { input = UserInput.defaultValue
+              history = CommandHistory.push state.history state.input.text },
             Execute state.input.text
         | DeleteLastChar ->
-            let newText =
-                match state.input.text, state.input.text.Length with
-                | s, 0 -> s
-                | s, sLength -> s[.. sLength - 2]
-
             { state with
-                input = { text = newText } },
+                input =
+                    { text =
+                        (match state.input.text, state.input.text.Length with
+                         | s, 0 -> s
+                         | s, sLength -> s[.. sLength - 2]) } },
             None
         | HistoryBack ->
-            match (state.history.historyPast, state.history.historyFuture) with
-            | [], _ -> { state with input = defaultInput }, None
-            | h :: t, future ->
-                { input = { text = h }
-                  history =
-                    { historyFuture = h :: future
-                      historyPast = t } },
+            match CommandHistory.backwards state.history with
+            | newInput, newHistory ->
+                { input =
+                    (match newInput with
+                     | Some s -> { text = s }
+                     | Option.None -> UserInput.defaultValue)
+                  history = newHistory },
                 None
+
         | HistoryForward ->
-            match (state.history.historyPast, state.history.historyFuture) with
-            | _, [] -> { state with input = defaultInput }, None
-            | past, h :: t ->
-                { input = { text = h }
-                  history =
-                    { historyFuture = t
-                      historyPast = h :: past } },
+            match CommandHistory.forward state.history with
+            | newInput, newHistory ->
+                { input =
+                    (match newInput with
+                     | Some s -> { text = s }
+                     | Option.None -> UserInput.defaultValue)
+                  history = newHistory },
                 None
-        | ClearInput -> { state with input = defaultInput }, None
+        | ClearInput ->
+            { state with
+                input = UserInput.defaultValue },
+            None
         | SubmitCommandBasic s -> state, Execute s
 
-    let renderBasic (_: ConsoleState) : unit = Console.Write "user> "
+    let renderBasic (_: State) : unit = Console.Write "user> "
 
-    let render (state: ConsoleState) : unit =
+    let render (state: State) : unit =
         let prompt = "(*)> "
         let currentRow = Console.CursorTop
         let currentCol = Console.CursorLeft
@@ -125,23 +154,24 @@ module InterpreterConsole =
         match result with
         | Execute txt -> rep txt |> sprintf "\n%s\n" |> Console.Write
         | None -> ()
-    
-    type InterpreterConsole = { isInteractive: bool; rep: string -> string } with
-        member this.run =
-            let render, read, renderResult =
-                if this.isInteractive then
-                    render, readOne, renderResult this.rep
-                else
-                    renderBasic, readBasic, renderResultBasic this.rep
-            
-            let mutable state =
-                { input = defaultInput
-                  history = defaultCommandHistory }
-            
-            while true do
-                render state
-                let newState, result = (read () |> updateState state)
-                renderResult result
-                state <- newState
-    
-    let createConsole rep isInteractive = { rep = rep; isInteractive = isInteractive }
+
+    let public create rep isInteractive =
+        { rep = rep
+          isInteractive = isInteractive }
+
+    let public run (console: T) =
+        let render, read, renderResult =
+            if console.isInteractive then
+                render, readOne, renderResult console.rep
+            else
+                renderBasic, readBasic, renderResultBasic console.rep
+
+        let mutable state =
+            { input = UserInput.defaultValue
+              history = CommandHistory.defaultValue }
+
+        while true do
+            render state
+            let newState, result = (read () |> updateState state)
+            renderResult result
+            state <- newState

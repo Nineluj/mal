@@ -2,6 +2,7 @@ module REPL
 
 open Types
 open Reader
+open Printer
 
 let READ x = Reader.read_str x
 let EVAL x = x
