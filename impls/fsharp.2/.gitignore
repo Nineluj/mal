@@ -258,3 +258,6 @@ paket-files/
 MyProject_coverage.xml
 **/bin/*
 **/obj/*
+
+# Custom
+**/tests.txt

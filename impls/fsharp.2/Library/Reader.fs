@@ -38,12 +38,12 @@ module Reader =
 
         innerFn false [] (List.skip 1 (List.ofSeq s))
 
-    let readString s : ReaderResult =
+    let readString s: ReaderResult =
         let stringContentOpt = getStringWithinQuotes s
 
         match stringContentOpt with
         | None -> ReadFailure @"Got EOF before closing quote for string"
-        | Some stringContent -> ReadSuccess(String(stringContent))
+        | Some stringContent -> ReadSuccess(String(false, stringContent))
 
     let read_atom (r: Reader) : ParserResult =
         match r with
@@ -61,7 +61,7 @@ module Reader =
             else if firstChar = '"' then
                 readString s
             else if firstChar = ':' then
-                ReadSuccess(Keyword.create s)
+                (true, s) |> MALObject.String |> ReadSuccess
             else
                 match s with
                 | "true" -> Bool true
@@ -94,7 +94,7 @@ module Reader =
              |> List.map (fun (keyResult, value) ->
                  match keyResult with
                  | ReadSuccess(String s) -> s, value
-                 | _ -> "", value)
+                 | _ -> failwith "invalid code path")
              |> Map.ofList)
             |> MALObject.HashMap
             |> ReadSuccess

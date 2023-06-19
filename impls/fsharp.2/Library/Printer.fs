@@ -7,10 +7,10 @@ module Printer =
         match input with
         | Number n -> n |> string
         | Symbol s -> s |> string
-        | String s ->
+        | String (isKeyword, s) ->
             // Translate keywords to the keyword representation
-            if Keyword.is_keyword s then
-                Keyword.to_string s
+            if isKeyword then
+                s
             else 
                 match print_readably with
                 | true -> $"%s{s}"

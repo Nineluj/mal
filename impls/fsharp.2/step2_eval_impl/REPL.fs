@@ -42,8 +42,7 @@ let rec EVAL (env: MALEnvironment) (x: MALObject) : EvalResult =
     | _ -> evalAst env x
 
 and evalAst (env: MALEnvironment) (x: MALObject) : EvalResult =
-    match x with
-    | List items ->
+    let evalAstSequence (createSequence: MALObject list -> MALObject) (items: MALObject list) =
         match
             ResultList.compute
                 items
@@ -57,8 +56,12 @@ and evalAst (env: MALEnvironment) (x: MALObject) : EvalResult =
                     | EvalSuccess v -> v
                     | EvalFailure _ -> failwith "invalid codepath")
         with
-        | ResultList.ListResultSuccess parsed -> parsed |> MALObject.List |> EvalSuccess
+        | ResultList.ListResultSuccess parsed -> parsed |> createSequence |> EvalSuccess
         | ResultList.ListResultFailure fail -> fail
+    
+    match x with
+    | List items -> evalAstSequence MALObject.List items
+    | Vector items -> evalAstSequence MALObject.Vector items
     | Symbol s ->
         (match Map.tryFind s env with
          | None -> s |> UndefinedToken |> EvalFailure
