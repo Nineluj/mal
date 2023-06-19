@@ -11,6 +11,7 @@
         <Compile Include="Reader.fs" />
         <Compile Include="Printer.fs" />
         <Compile Include="Builtin.fs" />
+        <Compile Include="Evaluator.fs" />
     </ItemGroup>
 
 </Project>
