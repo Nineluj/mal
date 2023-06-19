@@ -58,10 +58,23 @@ and evalAst (env: MALEnvironment) (x: MALObject) : EvalResult =
         with
         | ResultList.ListResultSuccess parsed -> parsed |> createSequence |> EvalSuccess
         | ResultList.ListResultFailure fail -> fail
-    
+
     match x with
     | List items -> evalAstSequence MALObject.List items
     | Vector items -> evalAstSequence MALObject.Vector items
+    | HashMap mapItems ->
+        mapItems
+        |> Map.toList
+        |> List.collect (fun (key, value) -> [ MALObject.String key; value ])
+        |> evalAstSequence (fun elements ->
+            elements
+            |> List.chunkBySize 2
+            |> List.map (fun l ->
+                match l[0], l[1] with
+                | String key, value -> key, value
+                | _ -> failwith "invalid code path")
+            |> Map.ofList
+            |> MALObject.HashMap)
     | Symbol s ->
         (match Map.tryFind s env with
          | None -> s |> UndefinedToken |> EvalFailure

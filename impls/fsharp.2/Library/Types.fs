@@ -60,8 +60,6 @@ module ResultList =
     let unroll (lst: 'result list) (predicate: 'result -> (bool * string option)) =
         lst |> List.partition (fun x -> fst (predicate x))
 
-
-
 type ReaderResult =
     | ReadSuccess of MALObject
     | ReadFailure of string

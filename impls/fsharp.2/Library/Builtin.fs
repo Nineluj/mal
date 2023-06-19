@@ -1,4 +1,4 @@
-module Builtin
+namespace Builtin
 
 open Types
 
