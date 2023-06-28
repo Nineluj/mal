@@ -1,6 +1,7 @@
 namespace Evaluator
 
 open Types
+open Environment
 
 module Evaluator =
     let rec evalBase (env: MALEnvironment) (x: MALObject) : EvalResult =
@@ -27,11 +28,11 @@ module Evaluator =
                 // its already getting parsed, replace it here
                 | Function f :: args -> (f args)
                 // is this needed?
-                | Symbol invokedFunctionSymbol :: args ->
-                    (match Map.tryFind invokedFunctionSymbol env with
-                     | None -> invokedFunctionSymbol |> UndefinedToken |> EvalFailure
-                     | Some(Function f) -> (f args)
-                     | Some _ -> InvokeOnNonFunction |> EvalFailure)
+                // | Symbol invokedFunctionSymbol :: args ->
+                //     (match Map.tryFind invokedFunctionSymbol env with
+                //      | None -> invokedFunctionSymbol |> UndefinedToken |> EvalFailure
+                //      | Some(Function f) -> (f args)
+                //      | Some _ -> InvokeOnNonFunction |> EvalFailure)
 
                 | _ -> failwith "invalid codepath"
 
@@ -72,7 +73,8 @@ module Evaluator =
                 |> Map.ofList
                 |> MALObject.HashMap)
         | Symbol s ->
-            (match Map.tryFind s env with
+            (match MALEnvironment.get s env with
              | None -> s |> UndefinedToken |> EvalFailure
              | Some value -> EvalSuccess value)
         | _ -> EvalSuccess x
+

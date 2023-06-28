@@ -27,8 +27,6 @@ and EvalFailure =
     | InvokeOnNonFunction
     | NotImplemented
 
-type MALEnvironment = Map<MALSymbol, MALObject>
-
 type Reader = string list
 
 [<RequireQualifiedAccess>]
@@ -49,16 +47,6 @@ module ResultList =
             ListResultFailure failures[0]
         else
             successes |> List.map toDesired |> ListResultSuccess
-
-
-
-    (*
-    Two lists:
-    1. Success values
-    2. Error messages
-    *)
-    let unroll (lst: 'result list) (predicate: 'result -> (bool * string option)) =
-        lst |> List.partition (fun x -> fst (predicate x))
 
 type ReaderResult =
     | ReadSuccess of MALObject
