@@ -22,8 +22,8 @@ let rep x =
     x
     |> READ
     |> function
-        | ReadFailure f -> PRINT_ERR "Read" f
-        | ReadSuccess v ->
+        | Error f -> PRINT_ERR "Read" f
+        | Ok v ->
             v
             |> EVAL env
             |> function

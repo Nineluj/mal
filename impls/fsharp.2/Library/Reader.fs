@@ -38,39 +38,41 @@ module Reader =
 
         innerFn false [] (List.skip 1 (List.ofSeq s))
 
-    let readString s: ReaderResult =
+    let readString s =
         let stringContentOpt = getStringWithinQuotes s
 
         match stringContentOpt with
-        | None -> ReadFailure @"Got EOF before closing quote for string"
-        | Some stringContent -> ReadSuccess(String(false, stringContent))
+        | None -> Error @"Got EOF before closing quote for string"
+        | Some stringContent -> Ok(String(false, stringContent))
 
-    let read_atom (r: Reader) : ParserResult =
+    let read_atom (r: Reader) : ReaderResult =
         match r with
-        | [] -> [], ReadFailure "Can't parse atom for empty input"
+        | [] -> Error "Can't parse atom for empty input"
         | s :: rest ->
-            rest,
             let firstChar = s[0]
 
             if isRestrictedChar firstChar then
-                ReadFailure $"Cannot use restricted char \"{firstChar}\" for atom: {s}"
+                Error $"Cannot use restricted char \"{firstChar}\" for atom: {s}"
             else if firstChar = '-' && s.Length > 1 && Char.IsDigit s[1] then
-                s[1..] |> int |> (fun x -> -x) |> Number |> ReadSuccess
+                (s[1..] |> int |> (fun x -> -x) |> Number, rest) |> Ok
             else if Char.IsDigit firstChar then
-                s |> int |> Number |> ReadSuccess
+                (s |> int |> Number, rest) |> Ok
             else if firstChar = '"' then
-                readString s
+                match readString s with
+                | Ok v -> Ok(v, rest)
+                | Error e -> Error e
             else if firstChar = ':' then
-                (true, s) |> MALObject.String |> ReadSuccess
+                ((true, s) |> MALObject.String, rest) |> Ok
             else
                 match s with
                 | "true" -> Bool true
                 | "false" -> Bool false
                 | "nil" -> Nil
                 | x -> Symbol x
-                |> ReadSuccess
+                |> (function
+                | v -> Ok(v, rest))
 
-    let createMapFromList (lst: MALObject list list) : ReaderResult =
+    let createMapFromList (lst: MALObject list list) =
         let pairsWithValidKeys, pairsWithInvalidKeys =
             lst
             |> List.map (fun x ->
@@ -78,12 +80,12 @@ module Reader =
                 let value = x[1]
 
                 match key with
-                | String s -> ReadSuccess(String s), value
-                | x -> ReadFailure $"Can't use type %s{x.GetType() |> string} for key", value)
+                | String s -> Ok(String s), value
+                | x -> Error $"Can't use type %s{x.GetType() |> string} for key", value)
             |> List.partition (fun (keyReadResult, _) ->
                 match keyReadResult with
-                | ReadSuccess _ -> true
-                | ReadFailure _ -> false)
+                | Ok _ -> true
+                | Error _ -> false)
 
         if pairsWithInvalidKeys.Length > 0 then
             // return the first error if we have more than one error
@@ -93,53 +95,57 @@ module Reader =
             (pairsWithValidKeys
              |> List.map (fun (keyResult, value) ->
                  match keyResult with
-                 | ReadSuccess(String s) -> s, value
+                 | Ok(String s) -> s, value
                  | _ -> failwith "invalid code path")
              |> Map.ofList)
             |> MALObject.HashMap
-            |> ReadSuccess
+            |> Ok
 
-    let rec read_form (r: Reader) : ParserResult =
+    let rec read_form (r: Reader) : ReaderResult =
         match r with
-        | [] -> [], ReadFailure "Can't parse empty token"
+        | [] -> Error "Can't parse empty token"
         | "(" :: t -> read_list t
         | "[" :: t -> read_vec t
         | "{" :: t -> read_hashmap t
-        | "'" :: t -> [], ReadFailure $"quoted values are not implemented yet. Tried to parse: {t}" // read_quoted t
+        | "'" :: t -> Error $"quoted values are not implemented yet. Tried to parse: {t}" // read_quoted t
         | other -> read_atom other
 
-    and read_seq (closingToken: string) (resultingType: (MALObject list -> MALObject)) (r: Reader) : ParserResult =
-        let rec innerFn (r: Reader) (acc: MALObject list) : Reader * ReaderResult =
+    and read_seq (closingToken: string) (resultingType: (MALObject list -> MALObject)) (r: Reader) : ReaderResult =
+        let rec innerFn (r: Reader) (acc: MALObject list) : ReaderResult =
             match r with
-            | [] -> [], ReadFailure @"Got EOF before end of sequence"
-            | token :: t when token = closingToken -> t, ReadSuccess(resultingType (List.rev acc))
+            | [] -> Error @"Got EOF before end of sequence"
+            | token :: t when token = closingToken -> Ok(resultingType (List.rev acc), t)
             | other ->
                 match read_form other with
-                | remaining, ReadSuccess result -> innerFn remaining (result :: acc)
-                | _, ReadFailure err -> [], ReadFailure err
+                | Ok(result, remaining) -> innerFn remaining (result :: acc)
+                | Error e -> Error e
 
         innerFn r []
 
-    and read_hashmap (r: Reader) : ParserResult =
+    and read_hashmap (r: Reader) : ReaderResult =
         let innerResult = read_seq "}" MALObject.List r
 
         match innerResult with
-        | remaining, ReadFailure err -> remaining, ReadFailure err
-        | remaining, ReadSuccess(MALObject.List lst) -> remaining, lst |> List.chunkBySize 2 |> createMapFromList
-        | _ -> [], ReadFailure "couldn't parse hashmap items as list (required for hashmap parsing)"
+        | Ok(MALObject.List lst, remaining) ->
+            let chunked = lst |> List.chunkBySize 2
 
-    and read_list (r: Reader) : ParserResult = read_seq ")" MALObject.List r
-    and read_vec (r: Reader) : ParserResult = read_seq "]" MALObject.Vector r
+            match createMapFromList chunked with
+            | Error e -> Error e
+            | Ok v -> Ok(v, remaining)
+        | Error error -> Error error
+        | _ -> Error "couldn't parse hashmap items as list (required for hashmap parsing)"
+
+    and read_list (r: Reader) : ReaderResult = read_seq ")" MALObject.List r
+    and read_vec (r: Reader) : ReaderResult = read_seq "]" MALObject.Vector r
 
     let read_str str =
         tokenize str
         |> List.filter (fun x -> x.Length > 0)
         |> read_form
         |> function
-            | [], ReadSuccess x -> ReadSuccess x
-            | remaining, ReadSuccess _ ->
-                ReadFailure $"Not all tokens were processed. Remaining: %A{List.toArray remaining}"
-            | _, ReadFailure err -> ReadFailure err
+            | Ok(x, []) -> Ok x
+            | Ok(_, remaining) -> Error $"Not all tokens were processed. Remaining: %A{List.toArray remaining}"
+            | Error e -> Error e
 
 
 // and read_quoted (r: Reader): ParserResult =

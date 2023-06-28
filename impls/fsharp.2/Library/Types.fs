@@ -48,8 +48,10 @@ module ResultList =
         else
             successes |> List.map toDesired |> ListResultSuccess
 
-type ReaderResult =
-    | ReadSuccess of MALObject
-    | ReadFailure of string
+type ReaderResult = Result<MALObject * string list, string>
 
-type ParserResult = Reader * ReaderResult
+// type ReaderResult =
+//     | ReadSuccess of MALObject
+//     | ReadFailure of string
+//
+// type ParserResult = Reader * ReaderResult
