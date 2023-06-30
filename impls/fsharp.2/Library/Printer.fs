@@ -1,34 +1,40 @@
 namespace Printer
 
-module Printer =
-    open Types
+open Library.ResultExtensions
 
-    let rec pr_str (print_readably: bool) (input: MALObject) : string =
+module Printer =
+    open Types    
+
+    let rec pr_str (print_readably: bool) (input: MALObject) : Result<string, string> =
         match input with
-        | Number n -> n |> string
-        | Symbol s -> s |> string
+        | Number n -> n |> string |> Ok
+        | Symbol s -> s |> string |> Ok
         | String (isKeyword, s) ->
             // Translate keywords to the keyword representation
             if isKeyword then
-                s
+                Ok s
             else 
                 match print_readably with
-                | true -> $"%s{s}"
+                | true -> Ok $"%s{s}"
                 | false ->
                     s.Replace("\n", @"\n").Replace(@"\", @"\\").Replace("\"", "\\\"")
-                    |> sprintf "\"%s\""
-        | Bool true -> "true"
-        | Bool false -> "false"
-        | Nil -> "nil"
-        | List items -> printSequenceWithoutOuter print_readably items |> sprintf "(%s)"
-        | Vector items -> printSequenceWithoutOuter print_readably items |> sprintf "[%s]"
+                    |> sprintf "\"%s\"" |> Ok
+        | Bool true -> Ok "true"
+        | Bool false -> Ok "false"
+        | Nil -> Ok "nil"
+        | List items -> printSequenceWithoutOuter print_readably items |> Result.map (sprintf "(%s)")
+        | Vector items -> printSequenceWithoutOuter print_readably items |> Result.map (sprintf "[%s]")
         | HashMap mapping ->
             mapping
             |> Map.toList
             |> List.collect (fun (x, y) -> [ MALObject.String x; y ])
             |> printSequenceWithoutOuter print_readably
-            |> sprintf "{%s}"
-        | Function _ -> failwith "not implemented"
+            |> Result.map (sprintf "{%s}")
+        | _ -> Error "not implemented"
 
-    and printSequenceWithoutOuter (print_readably: bool) (items: MALObject list) =
-        items |> List.map (pr_str print_readably) |> String.concat " "
+    and printSequenceWithoutOuter (print_readably: bool) (items: MALObject list): Result<string, string> =
+        items
+        |> List.map (pr_str print_readably)
+        |> Result.convertResults
+        |> Result.map List.toSeq
+        |> Result.map (String.concat " ")

@@ -1,5 +1,7 @@
 namespace Types
 
+type Rep = string -> Result<string, string>
+
 type MALSymbol = string
 
 /// Use a boolean to mark if the string is a keyword
@@ -16,9 +18,7 @@ type MALObject =
     | String of MALString
     | Function of (MALObject list -> EvalResult)
 
-and EvalResult =
-    | EvalSuccess of MALObject
-    | EvalFailure of EvalFailure
+and EvalResult = Result<MALObject, EvalFailure>
 
 and EvalFailure =
     | InvalidArgumentType

@@ -8,4 +8,5 @@ let rep x =
     |> READ
     |> EVAL
     |> PRINT
+    |> Ok
 

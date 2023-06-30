@@ -6,8 +6,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="InterpreterConsole.fs" />
+        <Compile Include="Extensions.fs" />
         <Compile Include="Types.fs" />
+        <Compile Include="InterpreterConsole.fs" />
         <Compile Include="Reader.fs" />
         <Compile Include="Printer.fs" />
         <Compile Include="Environment.fs" />

@@ -14,8 +14,8 @@ let rep x =
     x
     |> READ
     |> function
-        | ReadFailure f -> PRINT_ERR "Read" f
-        | ReadSuccess v ->
+        | Error e -> PRINT_ERR "Read" e |> Ok
+        | Ok v ->
             v
                 |> EVAL
                 |> PRINT

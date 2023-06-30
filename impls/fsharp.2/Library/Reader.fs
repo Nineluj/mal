@@ -145,7 +145,7 @@ module Reader =
         |> function
             | Ok(x, []) -> Ok x
             | Ok(_, remaining) -> Error $"Not all tokens were processed. Remaining: %A{List.toArray remaining}"
-            | Error e -> Error e
+            | Error e -> Error $"Reader: %s{e}"
 
 
 // and read_quoted (r: Reader): ParserResult =

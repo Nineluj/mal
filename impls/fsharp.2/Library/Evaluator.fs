@@ -6,7 +6,7 @@ open Environment
 module Evaluator =
     let rec evalBase (env: MALEnvironment) (x: MALObject) : EvalResult =
         match x with
-        | List [] -> EvalSuccess x
+        | List [] -> Ok x
         | List items ->
             match
                 ResultList.compute
@@ -14,12 +14,12 @@ module Evaluator =
                     (evalBase env)
                     (fun x ->
                         match x with
-                        | EvalSuccess _ -> true
-                        | EvalFailure _ -> false)
+                        | Ok _ -> true
+                        | Error _ -> false)
                     (fun x ->
                         match x with
-                        | EvalSuccess v -> v
-                        | EvalFailure _ -> failwith "invalid codepath")
+                        | Ok v -> v
+                        | Error _ -> failwith "invalid codepath")
             with
             | ResultList.ListResultFailure fail -> fail
             | ResultList.ListResultSuccess listElements ->
@@ -30,9 +30,9 @@ module Evaluator =
                 // is this needed?
                 // | Symbol invokedFunctionSymbol :: args ->
                 //     (match Map.tryFind invokedFunctionSymbol env with
-                //      | None -> invokedFunctionSymbol |> UndefinedToken |> EvalFailure
+                //      | None -> invokedFunctionSymbol |> UndefinedToken |> Error
                 //      | Some(Function f) -> (f args)
-                //      | Some _ -> InvokeOnNonFunction |> EvalFailure)
+                //      | Some _ -> InvokeOnNonFunction |> Error)
 
                 | _ -> failwith "invalid codepath"
 
@@ -46,14 +46,14 @@ module Evaluator =
                     (evalBase env)
                     (fun x ->
                         match x with
-                        | EvalSuccess _ -> true
-                        | EvalFailure _ -> false)
+                        | Ok _ -> true
+                        | Error _ -> false)
                     (fun x ->
                         match x with
-                        | EvalSuccess v -> v
-                        | EvalFailure _ -> failwith "invalid codepath")
+                        | Ok v -> v
+                        | Error _ -> failwith "invalid codepath")
             with
-            | ResultList.ListResultSuccess parsed -> parsed |> createSequence |> EvalSuccess
+            | ResultList.ListResultSuccess parsed -> parsed |> createSequence |> Ok
             | ResultList.ListResultFailure fail -> fail
 
         match x with
@@ -74,7 +74,7 @@ module Evaluator =
                 |> MALObject.HashMap)
         | Symbol s ->
             (match MALEnvironment.get s env with
-             | None -> s |> UndefinedToken |> EvalFailure
-             | Some value -> EvalSuccess value)
-        | _ -> EvalSuccess x
+             | None -> s |> UndefinedToken |> Error
+             | Some value -> Ok value)
+        | _ -> Ok x
 

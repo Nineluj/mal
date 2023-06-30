@@ -1,6 +1,7 @@
 namespace Library
 
 open Microsoft.FSharp.Core
+open Types
 
 [<RequireQualifiedAccess>]
 module InterpreterConsole =
@@ -8,7 +9,7 @@ module InterpreterConsole =
 
     type T =
         { isInteractive: bool
-          rep: string -> string }
+          rep: Rep }
 
     type UserInput =
         { text: string }
@@ -145,14 +146,26 @@ module InterpreterConsole =
         Console.Write(prompt)
         Console.Write(state.input.text)
 
-    let renderResultBasic (rep: string -> string) result =
+    let renderResultBasic (rep: Rep) result =
         match result with
-        | Execute txt -> rep txt |> sprintf "%s\n" |> Console.Write
+        | Execute txt ->
+            rep txt
+            |> function
+                | Ok v -> v
+                | Error e -> e
+            |> sprintf "%s\n"
+            |> Console.Write
         | None -> ()
 
-    let renderResult (rep: string -> string) result =
+    let renderResult (rep: Rep) result =
         match result with
-        | Execute txt -> rep txt |> sprintf "\n%s\n" |> Console.Write
+        | Execute txt ->
+            rep txt
+            |> function
+                | Ok v -> v
+                | Error e -> "ERROR: " + e
+            |> sprintf "\n%s\n"
+            |> Console.Write
         | None -> ()
 
     let public create rep isInteractive =
