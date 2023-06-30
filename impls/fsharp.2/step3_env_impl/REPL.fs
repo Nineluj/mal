@@ -8,18 +8,15 @@ let READ x = Reader.read_str x
 
 let EVAL x = Evaluator.evalBase x
 
-let PRINT x = Printer.pr_str false x
+let PRINT x : string = Printer.pr_str false x
 
 let PRINT_ERR err_type err = $"[{err_type}] Error: %A{err}"
 
+let (>=>) f1 f2 arg =
+    match f1 arg with
+    | Ok v -> f2 v
+    | Error e -> Error e
+
 let rep x =
-    x
-    |> READ
-    |> function
-        | Error f -> PRINT_ERR "Read" f
-        | Ok v ->
-            v
-            |> EVAL Builtin.Builtin.getEnv 
-            |> function
-                | Error err -> PRINT_ERR "Eval" err
-                | Ok v -> v |> PRINT
+    let env = Builtin.Builtin.getEnv
+    x |> (READ >=> (EVAL env)) |> PRINT

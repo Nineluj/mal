@@ -1,7 +1,5 @@
 namespace Types
 
-type Rep = string -> Result<string, string>
-
 type MALSymbol = string
 
 /// Use a boolean to mark if the string is a keyword
@@ -18,17 +16,29 @@ type MALObject =
     | String of MALString
     | Function of (MALObject list -> EvalResult)
 
-and EvalResult = Result<MALObject, EvalFailure>
+and EvalResult = Result<MALObject, MALError>
 
-and EvalFailure =
+and MALError =
+    // Generic
+    | NotImplemented
+    // Reader
+    | InvalidFormat of kind: string * actual: string
+    | UnexpectedReaderValue of unexpected: string
+    | MissingReaderValue of expected: string
+    | NotAllProcessed of remaining: string
+    | Comment // not actually an error, is handled specially
+    
+    // Function invocation errors
     | InvalidArgumentType
     | WrongArgumentLength
     | UndefinedToken of string
     | InvokeOnNonFunction
-    | NotImplemented
+
+type Rep = string -> string
 
 type Reader = string list
 
+// TODO: get rid of this
 [<RequireQualifiedAccess>]
 module ResultList =
     type ListResultResult<'a, 'b> =
@@ -48,10 +58,4 @@ module ResultList =
         else
             successes |> List.map toDesired |> ListResultSuccess
 
-type ReaderResult = Result<MALObject * string list, string>
-
-// type ReaderResult =
-//     | ReadSuccess of MALObject
-//     | ReadFailure of string
-//
-// type ParserResult = Reader * ReaderResult
+type ReaderResult = Result<MALObject * string list, MALError>

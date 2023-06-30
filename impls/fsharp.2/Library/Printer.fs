@@ -1,40 +1,58 @@
 namespace Printer
 
-open Library.ResultExtensions
+open Types
 
 module Printer =
-    open Types    
+    let newlineTempSubstitute = 0xF0 |> char |> string
 
-    let rec pr_str (print_readably: bool) (input: MALObject) : Result<string, string> =
+    let rec pr_str (print_readably: bool) (input: Result<MALObject, MALError>) : string =
         match input with
-        | Number n -> n |> string |> Ok
-        | Symbol s -> s |> string |> Ok
-        | String (isKeyword, s) ->
-            // Translate keywords to the keyword representation
-            if isKeyword then
-                Ok s
-            else 
-                match print_readably with
-                | true -> Ok $"%s{s}"
-                | false ->
-                    s.Replace("\n", @"\n").Replace(@"\", @"\\").Replace("\"", "\\\"")
-                    |> sprintf "\"%s\"" |> Ok
-        | Bool true -> Ok "true"
-        | Bool false -> Ok "false"
-        | Nil -> Ok "nil"
-        | List items -> printSequenceWithoutOuter print_readably items |> Result.map (sprintf "(%s)")
-        | Vector items -> printSequenceWithoutOuter print_readably items |> Result.map (sprintf "[%s]")
-        | HashMap mapping ->
-            mapping
-            |> Map.toList
-            |> List.collect (fun (x, y) -> [ MALObject.String x; y ])
-            |> printSequenceWithoutOuter print_readably
-            |> Result.map (sprintf "{%s}")
-        | _ -> Error "not implemented"
+        | Error e ->
+            match e with
+            | NotImplemented -> "Not implemented"
+            | InvalidFormat(kind, actual) -> $"[Reader] Unexpected EOF, %s{actual}"
+            | UnexpectedReaderValue unexpected -> $"[Reader] extra value, unexpected: %s{unexpected}"
+            | MissingReaderValue expected -> $"[Reader] missing value, expected: %s{expected}"
+            | NotAllProcessed remaining -> failwith "todo"
+            | Comment -> ""
+            | InvalidArgumentType -> failwith "todo"
+            | WrongArgumentLength -> failwith "todo"
+            | UndefinedToken s -> failwith "todo"
+            | InvokeOnNonFunction -> failwith "todo"
+        | Ok v ->
+            match v with
+            | Number n -> n |> string
+            | Symbol s -> s |> string
+            | String(isKeyword, s) ->
+                // Translate keywords to the keyword representation
+                if isKeyword then
+                    s
+                else
+                    match print_readably with
+                    | true -> $"%s{s}"
+                    | false ->
+                        s
+                            // slight hack here since the second replace (\ -> \\) will mess with \n.
+                            .Replace("\n", newlineTempSubstitute)
+                            .Replace(@"\", @"\\")
+                            .Replace("\"", "\\\"")
+                            .Replace(newlineTempSubstitute, @"\n")
+                        |> sprintf "\"%s\""
+            | Bool true -> "true"
+            | Bool false -> "false"
+            | Nil -> "nil"
+            | List items -> printSequenceWithoutOuter print_readably items |> sprintf "(%s)"
+            | Vector items -> printSequenceWithoutOuter print_readably items |> sprintf "[%s]"
+            | HashMap mapping ->
+                mapping
+                |> Map.toList
+                |> List.collect (fun (x, y) -> [ MALObject.String x; y ])
+                |> printSequenceWithoutOuter print_readably
+                |> sprintf "{%s}"
+            | _ -> "not implemented"
 
-    and printSequenceWithoutOuter (print_readably: bool) (items: MALObject list): Result<string, string> =
+    and printSequenceWithoutOuter (print_readably: bool) (items: MALObject list) : string =
         items
-        |> List.map (pr_str print_readably)
-        |> Result.convertResults
-        |> Result.map List.toSeq
-        |> Result.map (String.concat " ")
+        |> List.map (Ok >> pr_str print_readably)
+        |> List.toSeq
+        |> String.concat " "

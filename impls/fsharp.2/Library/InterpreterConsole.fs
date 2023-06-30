@@ -150,9 +150,6 @@ module InterpreterConsole =
         match result with
         | Execute txt ->
             rep txt
-            |> function
-                | Ok v -> v
-                | Error e -> e
             |> sprintf "%s\n"
             |> Console.Write
         | None -> ()
@@ -161,9 +158,6 @@ module InterpreterConsole =
         match result with
         | Execute txt ->
             rep txt
-            |> function
-                | Ok v -> v
-                | Error e -> "ERROR: " + e
             |> sprintf "\n%s\n"
             |> Console.Write
         | None -> ()
