@@ -107,7 +107,10 @@ module Reader =
         | "(" :: t -> read_list t
         | "[" :: t -> read_vec t
         | "{" :: t -> read_hashmap t
-        | "'" :: t -> Error $"quoted values are not implemented yet. Tried to parse: {t}" // read_quoted t
+        | "'" :: t -> read_quoted "quote" t
+        | "`" :: t -> read_quoted "quasiquote" t
+        | "~" :: t -> read_quoted "unquote" t
+        | "~@" :: t -> read_quoted "splice-unquote" t
         | other -> read_atom other
 
     and read_seq (closingToken: string) (resultingType: (MALObject list -> MALObject)) (r: Reader) : ReaderResult =
@@ -137,6 +140,14 @@ module Reader =
 
     and read_list (r: Reader) : ReaderResult = read_seq ")" MALObject.List r
     and read_vec (r: Reader) : ReaderResult = read_seq "]" MALObject.Vector r
+    
+    and read_quoted (symbolName: string) (r: Reader): ReaderResult =
+        match r with
+        | [] -> Error "empty quoted value"
+        | content ->
+            match read_form content with
+            | Error e -> Error $"Unable to parse content of quoted data %s{e}"
+            | Ok (v, rest) -> Ok (MALObject.List [(MALObject.Symbol symbolName); v], rest)
 
     let read_str str =
         tokenize str
@@ -146,14 +157,3 @@ module Reader =
             | Ok(x, []) -> Ok x
             | Ok(_, remaining) -> Error $"Not all tokens were processed. Remaining: %A{List.toArray remaining}"
             | Error e -> Error $"Reader: %s{e}"
-
-
-// and read_quoted (r: Reader): ParserResult =
-//     match r with
-//     | [] -> [], ReadFailure @"Got EOF, expected quoted value"
-//     | inner -> (match read_form inner with
-//                 | remaining, ReadSuccess (MALObject.List lst) -> remaining, ReadSuccess (
-//                         MALObject.List ((MALObject.Symbol "quote")::lst)
-//                     )
-//                 | remaining, ReadSuccess  -> remaining ReadFailure "only lists for now"
-//                         )
