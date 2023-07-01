@@ -10,14 +10,14 @@ module Printer =
         | Error e ->
             match e with
             | NotImplemented -> "Not implemented"
-            | InvalidFormat(kind, actual) -> $"[Reader] Unexpected EOF, %s{actual}"
+            | InvalidFormat(kind, actual) -> $"[Reader] Unexpected EOF. Should be of type (%s{kind}), actual: %s{actual}"
             | UnexpectedReaderValue unexpected -> $"[Reader] extra value, unexpected: %s{unexpected}"
             | MissingReaderValue expected -> $"[Reader] missing value, expected: %s{expected}"
-            | NotAllProcessed remaining -> failwith "todo"
+            | NotAllProcessed remaining -> $"Not all tokens were processed. Remaining: %A{remaining}"
             | Comment -> ""
             | InvalidArgumentType -> failwith "todo"
             | WrongArgumentLength -> failwith "todo"
-            | UndefinedToken s -> failwith "todo"
+            | UndefinedToken s -> $"Can't evaluate undefined token: %s{s}"
             | InvokeOnNonFunction -> failwith "todo"
         | Ok v ->
             match v with
